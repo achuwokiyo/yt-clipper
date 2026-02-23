@@ -26,76 +26,63 @@
   }
   .container { max-width: 680px; margin: 0 auto; padding: 40px 16px 80px; position: relative; z-index: 1; }
 
-  .badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(255,60,95,0.1); border: 1px solid rgba(255,60,95,0.3);
-    color: var(--accent); font-family: 'DM Mono', monospace; font-size: 10px;
-    letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 12px;
-    border-radius: 100px; margin-bottom: 20px;
-  }
+  .badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,60,95,0.1); border: 1px solid rgba(255,60,95,0.3); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 5px 12px; border-radius: 100px; margin-bottom: 20px; }
   .badge::before { content: ''; width: 5px; height: 5px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
-
   h1 { font-size: clamp(28px, 7vw, 48px); font-weight: 800; line-height: 1.1; letter-spacing: -0.03em; margin-bottom: 10px; }
   h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
   .subtitle { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 36px; }
 
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
-  .card-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; font-family: 'DM Mono', monospace; }
-
-  /* Mode selector */
-  .mode-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .mode-tab {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
-    color: var(--muted); font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600;
-    padding: 14px; cursor: pointer; transition: all 0.2s; text-align: center; touch-action: manipulation;
-  }
-  .mode-tab .tab-icon { font-size: 20px; display: block; margin-bottom: 6px; }
-  .mode-tab .tab-desc { font-size: 10px; font-family: 'DM Mono', monospace; font-weight: 400; color: var(--muted); margin-top: 3px; display: block; }
-  .mode-tab.active { background: rgba(255,60,95,0.08); border-color: rgba(255,60,95,0.4); color: var(--text); }
-  .mode-tab.active .tab-desc { color: var(--accent); }
-
-  /* Source panels */
-  .source-panel { display: none; }
-  .source-panel.visible { display: block; }
-
-  input[type="text"], input[type="number"] {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px; color: var(--text); font-family: 'DM Mono', monospace;
-    font-size: 15px; padding: 13px 16px; outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s; -webkit-appearance: none;
-  }
-  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,60,95,0.1); }
-  input::placeholder { color: var(--muted); }
-  input[type="number"] { -moz-appearance: textfield; }
-  input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .card-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; font-family: 'DM Mono', monospace; }
 
   /* Upload area */
-  .upload-area {
-    border: 2px dashed var(--border); border-radius: 12px; padding: 32px 20px;
-    text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
-  }
-  .upload-area:hover, .upload-area.dragover { border-color: var(--accent); background: rgba(255,60,95,0.04); }
+  .upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 28px 20px; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; }
+  .upload-area:hover { border-color: var(--accent); background: rgba(255,60,95,0.04); }
   .upload-area.has-file { border-color: rgba(46,255,158,0.4); background: rgba(46,255,158,0.04); }
-  .upload-icon { font-size: 32px; margin-bottom: 10px; }
+  .upload-icon { font-size: 28px; margin-bottom: 8px; }
   .upload-text { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
   .upload-sub { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
   .upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
 
-  .upload-progress {
-    display: none; margin-top: 12px;
-    background: var(--surface2); border-radius: 10px; padding: 12px 14px;
-  }
+  .upload-progress { display: none; margin-top: 12px; background: var(--surface2); border-radius: 10px; padding: 12px 14px; }
   .upload-progress.visible { display: block; }
-  .upload-progress-bar-wrap { background: var(--border); border-radius: 100px; height: 4px; margin: 8px 0; overflow: hidden; }
-  .upload-progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.3s; }
+  .upload-bar-wrap { background: var(--border); border-radius: 100px; height: 5px; margin: 8px 0; overflow: hidden; }
+  .upload-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.3s; }
   .upload-progress-text { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  /* Recent videos */
+  .recent-section { display: none; margin-top: 14px; }
+  .recent-section.visible { display: block; }
+  .recent-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .recent-label::before { content: ''; width: 5px; height: 5px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
+
+  .recent-item {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; cursor: pointer;
+    transition: all 0.2s; margin-bottom: 8px;
+  }
+  .recent-item:hover { border-color: rgba(46,255,158,0.3); }
+  .recent-item.selected { border-color: rgba(46,255,158,0.5); background: rgba(46,255,158,0.06); }
+  .recent-icon { font-size: 20px; flex-shrink: 0; }
+  .recent-info { flex: 1; min-width: 0; }
+  .recent-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recent-meta { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .recent-timer { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--success); margin-left: auto; flex-shrink: 0; }
+  .recent-check { font-size: 16px; display: none; flex-shrink: 0; }
+  .recent-item.selected .recent-check { display: block; }
+
+  /* Divider */
+  .divider { display: flex; align-items: center; gap: 12px; margin: 16px 0 4px; }
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+  .divider-text { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
 
   /* Counter */
   .counter-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .counter-label { font-size: 15px; font-weight: 600; }
   .counter-controls { display: flex; align-items: center; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; flex-shrink: 0; }
-  .counter-btn { background: none; border: none; color: var(--text); font-size: 22px; font-weight: 300; width: 48px; height: 48px; cursor: pointer; transition: background 0.15s; font-family: 'DM Mono', monospace; touch-action: manipulation; }
+  .counter-btn { background: none; border: none; color: var(--text); font-size: 22px; width: 48px; height: 48px; cursor: pointer; transition: background 0.15s; font-family: 'DM Mono', monospace; touch-action: manipulation; }
   .counter-btn:active { background: rgba(255,60,95,0.15); }
   .counter-value { min-width: 52px; text-align: center; font-family: 'DM Mono', monospace; font-size: 20px; font-weight: 500; color: var(--accent); border-left: 1px solid var(--border); border-right: 1px solid var(--border); height: 48px; display: flex; align-items: center; justify-content: center; }
 
@@ -106,20 +93,22 @@
   @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
   .clip-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .clip-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); font-weight: 500; background: rgba(255,60,95,0.1); border: 1px solid rgba(255,60,95,0.2); border-radius: 6px; padding: 3px 8px; flex-shrink: 0; }
-  .clip-status { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-left: auto; transition: color 0.2s; }
+  .clip-status { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-left: auto; }
   .clip-row.filled .clip-status { color: var(--success); }
   .clip-fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
   .clip-field { display: flex; flex-direction: column; gap: 4px; }
   .clip-field-label { font-size: 9px; font-family: 'DM Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
-  .clip-field input { padding: 10px 10px; font-size: 16px; }
+  input[type="text"], input[type="number"] { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 15px; padding: 13px 16px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; -webkit-appearance: none; }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,60,95,0.1); }
+  input::placeholder { color: var(--muted); }
+  input[type="number"] { -moz-appearance: textfield; padding: 10px; font-size: 16px; }
+  input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
   .dur-presets { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
   .dur-preset { background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: all 0.15s; touch-action: manipulation; }
   .dur-preset.active { background: rgba(255,60,95,0.1); border-color: rgba(255,60,95,0.3); color: var(--accent); }
 
-  /* Generate button */
-  .generate-btn { width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 14px; color: white; font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; padding: 18px; cursor: pointer; margin-top: 6px; transition: opacity 0.2s, transform 0.15s; touch-action: manipulation; -webkit-appearance: none; }
+  .generate-btn { width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 14px; color: white; font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; padding: 18px; cursor: pointer; margin-top: 6px; transition: transform 0.15s; touch-action: manipulation; -webkit-appearance: none; }
   .generate-btn:active { transform: scale(0.98); }
-  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   /* Progress */
   .progress-section { display: none; margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px; text-align: center; }
@@ -129,7 +118,7 @@
   .progress-step { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
   .progress-text { font-size: 13px; color: var(--muted); font-family: 'DM Mono', monospace; min-height: 20px; margin-bottom: 20px; }
   .progress-bar-wrap { width: 100%; background: var(--border); border-radius: 100px; height: 8px; overflow: hidden; margin-bottom: 10px; }
-  .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.5s ease, background 0.5s ease; }
+  .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width 0.5s ease; }
   .progress-bar-fill.cutting { background: linear-gradient(90deg, var(--success), #7eb8ff); }
   .progress-pct { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500; color: var(--accent); }
   .progress-pct.cutting { color: var(--success); }
@@ -148,9 +137,9 @@
   .file-card { background: var(--surface); border: 1px solid rgba(46,255,158,0.2); border-radius: 12px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 10px; animation: slideIn 0.25s ease both; }
   .file-icon { width: 36px; height: 36px; background: rgba(46,255,158,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
   .file-info { flex: 1; min-width: 0; }
-  .file-name { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-name { font-family: 'DM Mono', monospace; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .file-size { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .download-btn { background: rgba(46,255,158,0.1); border: 1px solid rgba(46,255,158,0.3); color: var(--success); font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; padding: 8px 14px; border-radius: 8px; cursor: pointer; text-decoration: none; white-space: nowrap; touch-action: manipulation; transition: background 0.15s; }
+  .download-btn { background: rgba(46,255,158,0.1); border: 1px solid rgba(46,255,158,0.3); color: var(--success); font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; padding: 8px 14px; border-radius: 8px; cursor: pointer; text-decoration: none; white-space: nowrap; touch-action: manipulation; }
   .download-btn:active { background: rgba(46,255,158,0.2); }
 
   .error-box { background: rgba(255,60,95,0.08); border: 1px solid rgba(255,60,95,0.25); border-radius: 12px; padding: 16px; margin-top: 16px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); display: none; line-height: 1.6; word-break: break-word; }
@@ -164,32 +153,28 @@
 <body>
 <div class="container">
 
-  <div class="badge">YT Clipper</div>
-  <h1>Extrae clips de<br><span>vídeo</span></h1>
-  <p class="subtitle">Sube tu vídeo o pega un enlace de YouTube, define los momentos y descarga tus clips.</p>
+  <div class="badge">Video Clipper</div>
+  <h1>Extrae clips de<br><span>cualquier vídeo</span></h1>
+  <p class="subtitle">Sube tu vídeo desde PC, luego accede desde el móvil para descargar tus clips.</p>
 
   <div id="formSection">
 
-    <!-- Mode selector -->
+    <!-- Upload card -->
     <div class="card">
-      <div class="card-label">Fuente del vídeo</div>
-      <div class="mode-tabs">
-        <div class="mode-tab active" id="tab-upload" onclick="setMode('upload')">
-          <span class="tab-icon">📁</span>
-          Subir vídeo
-          <span class="tab-desc">MP4 desde tu dispositivo</span>
-        </div>
-        <div class="mode-tab" id="tab-youtube" onclick="setMode('youtube')">
-          <span class="tab-icon">▶️</span>
-          YouTube
-          <span class="tab-desc">Pegar enlace</span>
+      <div class="card-label">Vídeo</div>
+
+      <!-- Recent videos -->
+      <div class="recent-section" id="recentSection">
+        <div class="recent-label">En caché — listos para usar</div>
+        <div id="recentList"></div>
+        <div class="divider">
+          <div class="divider-line"></div>
+          <div class="divider-text">o sube otro</div>
+          <div class="divider-line"></div>
         </div>
       </div>
-    </div>
 
-    <!-- Upload panel -->
-    <div class="card source-panel visible" id="panel-upload">
-      <div class="card-label">Selecciona el vídeo</div>
+      <!-- Upload area -->
       <div class="upload-area" id="uploadArea">
         <div class="upload-icon">🎬</div>
         <div class="upload-text" id="uploadText">Toca para seleccionar vídeo</div>
@@ -197,17 +182,11 @@
         <input type="file" id="videoFile" accept="video/*" onchange="handleFileSelect(this)">
       </div>
       <div class="upload-progress" id="uploadProgress">
-        <div class="upload-progress-text" id="uploadProgressText">Subiendo vídeo...</div>
-        <div class="upload-progress-bar-wrap">
-          <div class="upload-progress-bar" id="uploadProgressBar"></div>
+        <div class="upload-progress-text" id="uploadProgressText">Subiendo...</div>
+        <div class="upload-bar-wrap">
+          <div class="upload-bar" id="uploadBar"></div>
         </div>
       </div>
-    </div>
-
-    <!-- YouTube panel -->
-    <div class="card source-panel" id="panel-youtube">
-      <div class="card-label">URL del vídeo</div>
-      <input type="text" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" autocorrect="off" spellcheck="false" />
     </div>
 
     <!-- Counter -->
@@ -228,7 +207,7 @@
       <div class="clips-grid" id="clipsGrid"></div>
     </div>
 
-    <button class="generate-btn" onclick="startJob()" id="generateBtn">⚡ Extraer clips</button>
+    <button class="generate-btn" onclick="startJob()">⚡ Extraer clips</button>
   </div>
 
   <!-- Progress -->
@@ -241,15 +220,13 @@
     </div>
     <div class="progress-pct" id="progressPct">0%</div>
     <div class="progress-phase">
-      <div class="phase-dot" id="phase-upload">Subida</div>
-      <div class="phase-dot" id="phase-cut">Corte</div>
+      <div class="phase-dot active" id="phase-cut">Cortando</div>
       <div class="phase-dot" id="phase-done">Listo</div>
     </div>
   </div>
 
   <div class="error-box" id="errorBox"></div>
 
-  <!-- Results -->
   <div class="results-section" id="resultsSection">
     <div class="results-title">✓ Clips listos para descargar</div>
     <div id="filesList"></div>
@@ -257,26 +234,73 @@
   </div>
 
   <div class="tip">
-    <strong>Tip:</strong> Los vídeos de YouTube se guardan en caché 30 min. Si repites con la misma URL, los clips serán instantáneos.
+    <strong>Tip:</strong> Sube el vídeo desde tu PC. Tienes 45 minutos para acceder desde el móvil y descargar todos los clips que necesites sin volver a subir.
   </div>
 </div>
 
 <script>
   let clipCount = 3;
-  let currentMode = 'upload';
   let uploadId = null;
+  let selectedUploadId = null;
   let pollInterval = null;
   let currentJobId = null;
 
-  function setMode(mode) {
-    currentMode = mode;
-    document.getElementById('tab-upload').classList.toggle('active', mode === 'upload');
-    document.getElementById('tab-youtube').classList.toggle('active', mode === 'youtube');
-    document.getElementById('panel-upload').classList.toggle('visible', mode === 'upload');
-    document.getElementById('panel-youtube').classList.toggle('visible', mode === 'youtube');
+  // Load recent videos on page load
+  async function loadRecent() {
+    try {
+      const res = await fetch('/api/recent');
+      const items = await res.json();
+      const section = document.getElementById('recentSection');
+      const list = document.getElementById('recentList');
 
-    // Update phase labels
-    document.getElementById('phase-upload').textContent = mode === 'upload' ? 'Subida' : 'Descarga';
+      if (items.length === 0) {
+        section.classList.remove('visible');
+        return;
+      }
+
+      section.classList.add('visible');
+      list.innerHTML = '';
+      items.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'recent-item';
+        el.id = `recent-${item.upload_id}`;
+        el.innerHTML = `
+          <div class="recent-icon">🎬</div>
+          <div class="recent-info">
+            <div class="recent-name">${item.name}</div>
+            <div class="recent-meta">En caché · expira en ${item.remaining_minutes} min</div>
+          </div>
+          <div class="recent-timer" id="timer-${item.upload_id}">${item.remaining_minutes}m</div>
+          <div class="recent-check">✓</div>
+        `;
+        el.onclick = () => selectRecent(item.upload_id, el);
+        list.appendChild(el);
+      });
+
+      // Auto-select if only one
+      if (items.length === 1) {
+        const el = document.getElementById(`recent-${items[0].upload_id}`);
+        selectRecent(items[0].upload_id, el);
+      }
+
+    } catch(e) {
+      console.log('No recent videos');
+    }
+  }
+
+  function selectRecent(id, el) {
+    // Deselect all
+    document.querySelectorAll('.recent-item').forEach(i => i.classList.remove('selected'));
+    // Select this
+    el.classList.add('selected');
+    selectedUploadId = id;
+    uploadId = null; // clear any new upload
+    // Clear upload area
+    document.getElementById('uploadArea').classList.remove('has-file');
+    document.getElementById('uploadText').textContent = 'Toca para seleccionar vídeo';
+    document.getElementById('uploadSub').textContent = 'MP4, MOV, AVI · Máx 2GB';
+    document.getElementById('uploadProgress').classList.remove('visible');
+    document.getElementById('videoFile').value = '';
   }
 
   function changeCount(delta) {
@@ -338,65 +362,66 @@
     const minVal = document.getElementById(`min-${i}`).value;
     const secVal = document.getElementById(`sec-${i}`).value;
     const durVal = document.getElementById(`dur-${i}`).value;
-    const row = document.getElementById(`clip-${i}`);
-    const status = document.getElementById(`status-${i}`);
     const isReady = (minVal !== '' || secVal !== '') && durVal !== '';
-    row.classList.toggle('filled', isReady);
-    status.textContent = isReady ? `${minVal||'0'}:${(secVal||'0').padStart(2,'0')} · ${durVal}s` : 'pendiente';
+    document.getElementById(`clip-${i}`).classList.toggle('filled', isReady);
+    document.getElementById(`status-${i}`).textContent = isReady
+      ? `${minVal||'0'}:${(secVal||'0').padStart(2,'0')} · ${durVal}s`
+      : 'pendiente';
   }
 
   async function handleFileSelect(input) {
     const file = input.files[0];
     if (!file) return;
 
+    // Deselect recent
+    document.querySelectorAll('.recent-item').forEach(i => i.classList.remove('selected'));
+    selectedUploadId = null;
+
     const area = document.getElementById('uploadArea');
     const progressEl = document.getElementById('uploadProgress');
-    const progressBar = document.getElementById('uploadProgressBar');
-    const progressText = document.getElementById('uploadProgressText');
-    const uploadText = document.getElementById('uploadText');
-    const uploadSub = document.getElementById('uploadSub');
+    const bar = document.getElementById('uploadBar');
+    const text = document.getElementById('uploadProgressText');
 
-    uploadText.textContent = file.name;
-    uploadSub.textContent = `${(file.size / (1024*1024)).toFixed(1)} MB`;
+    document.getElementById('uploadText').textContent = file.name;
+    document.getElementById('uploadSub').textContent = `${(file.size/(1024*1024)).toFixed(1)} MB`;
     progressEl.classList.add('visible');
-    progressText.textContent = 'Subiendo vídeo al servidor...';
+    text.textContent = 'Subiendo vídeo al servidor...';
 
     const formData = new FormData();
     formData.append('video', file);
 
     try {
-      const xhr = new XMLHttpRequest();
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          const pct = Math.round((e.loaded / e.total) * 100);
-          progressBar.style.width = pct + '%';
-          progressText.textContent = `Subiendo... ${pct}%`;
-        }
-      };
-
       const result = await new Promise((resolve, reject) => {
-        xhr.onload = () => {
-          if (xhr.status === 200) resolve(JSON.parse(xhr.responseText));
-          else reject(new Error('Error subiendo archivo'));
+        const xhr = new XMLHttpRequest();
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            bar.style.width = pct + '%';
+            text.textContent = `Subiendo... ${pct}%`;
+          }
         };
+        xhr.onload = () => xhr.status === 200 ? resolve(JSON.parse(xhr.responseText)) : reject(new Error('Error subiendo'));
         xhr.onerror = () => reject(new Error('Error de red'));
         xhr.open('POST', '/api/upload');
         xhr.send(formData);
       });
 
       uploadId = result.upload_id;
-      progressText.textContent = '✓ Vídeo listo';
-      progressBar.style.width = '100%';
-      progressBar.style.background = 'var(--success)';
+      bar.style.width = '100%';
+      bar.style.background = 'var(--success)';
+      text.textContent = `✓ "${result.name}" listo · ${result.size} MB · válido 45 min`;
       area.classList.add('has-file');
 
-    } catch (e) {
-      progressText.textContent = '⚠ Error: ' + e.message;
+      // Refresh recent list
+      loadRecent();
+
+    } catch(e) {
+      text.textContent = '⚠ Error: ' + e.message;
     }
   }
 
   function setPhase(phase) {
-    const phases = ['upload', 'cut', 'done'];
+    const phases = ['cut', 'done'];
     phases.forEach(p => {
       const el = document.getElementById(`phase-${p}`);
       el.className = 'phase-dot';
@@ -406,6 +431,9 @@
   }
 
   async function startJob() {
+    const activeUploadId = uploadId || selectedUploadId;
+    if (!activeUploadId) { alert('Selecciona o sube un vídeo primero'); return; }
+
     const clips = [];
     for (let i = 0; i < clipCount; i++) {
       const minVal = document.getElementById(`min-${i}`).value;
@@ -417,29 +445,18 @@
     }
     if (clips.length === 0) { alert('Rellena al menos un clip'); return; }
 
-    let body = { mode: currentMode, clips };
-
-    if (currentMode === 'upload') {
-      if (!uploadId) { alert('Primero selecciona y sube un vídeo'); return; }
-      body.upload_id = uploadId;
-    } else {
-      const url = document.getElementById('ytUrl').value.trim();
-      if (!url) { alert('Introduce la URL del vídeo'); return; }
-      body.url = url;
-    }
-
     document.getElementById('formSection').style.display = 'none';
     document.getElementById('progressSection').classList.add('visible');
     document.getElementById('errorBox').classList.remove('visible');
     document.getElementById('progressPct').textContent = '0%';
     document.getElementById('progressBarFill').style.width = '0%';
-    setPhase('upload');
+    setPhase('cut');
 
     try {
       const res = await fetch('/api/start', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
+        body: JSON.stringify({ mode: 'upload', upload_id: activeUploadId, clips })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -464,12 +481,7 @@
         fill.style.width = pct + '%';
         pctEl.textContent = pct + '%';
 
-        if (data.status === 'downloading') {
-          document.getElementById('progressStep').textContent = '📥 Descargando vídeo...';
-          fill.classList.remove('cutting');
-          pctEl.classList.remove('cutting');
-          setPhase('upload');
-        } else if (data.status === 'cutting') {
+        if (data.status === 'cutting') {
           document.getElementById('progressStep').textContent = '✂️ Cortando clips...';
           fill.classList.add('cutting');
           pctEl.classList.add('cutting');
@@ -524,18 +536,12 @@
     document.getElementById('resultsSection').classList.remove('visible');
     document.getElementById('formSection').style.display = 'block';
     document.getElementById('errorBox').classList.remove('visible');
-    uploadId = null;
     currentJobId = null;
-    document.getElementById('uploadProgress').classList.remove('visible');
-    document.getElementById('uploadArea').classList.remove('has-file');
-    document.getElementById('uploadText').textContent = 'Toca para seleccionar vídeo';
-    document.getElementById('uploadSub').textContent = 'MP4, MOV, AVI · Máx 2GB';
-    document.getElementById('uploadProgressBar').style.width = '0%';
-    document.getElementById('uploadProgressBar').style.background = '';
-    document.getElementById('videoFile').value = '';
+    loadRecent();
   }
 
   renderClips();
+  loadRecent();
 </script>
 </body>
 </html>
