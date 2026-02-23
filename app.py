@@ -17,34 +17,36 @@ UPLOADS_DIR = Path("/tmp/uploads")
 UPLOADS_DIR.mkdir(exist_ok=True)
 
 jobs = {}
-video_cache = {}
-CACHE_MINUTES = 30
+video_cache = {}   # YouTube URL cache
+upload_cache = {}  # Uploaded file cache
+CACHE_MINUTES = 45
 
 def time_to_seconds(minutes, seconds):
     return int(minutes) * 60 + int(seconds)
 
-def get_cached_video(key):
-    if key in video_cache:
-        entry = video_cache[key]
+def get_cached_video(key, cache):
+    if key in cache:
+        entry = cache[key]
         age_minutes = (time.time() - entry["downloaded_at"]) / 60
         if age_minutes < CACHE_MINUTES and Path(entry["path"]).exists():
             return Path(entry["path"])
         else:
             if Path(entry["path"]).exists():
                 Path(entry["path"]).unlink()
-            del video_cache[key]
+            del cache[key]
     return None
 
 def clean_expired_cache():
-    expired = []
-    for key, entry in video_cache.items():
-        age_minutes = (time.time() - entry["downloaded_at"]) / 60
-        if age_minutes >= CACHE_MINUTES:
-            if Path(entry["path"]).exists():
-                Path(entry["path"]).unlink()
-            expired.append(key)
-    for key in expired:
-        del video_cache[key]
+    for cache in [video_cache, upload_cache]:
+        expired = []
+        for key, entry in cache.items():
+            age_minutes = (time.time() - entry["downloaded_at"]) / 60
+            if age_minutes >= CACHE_MINUTES:
+                if Path(entry["path"]).exists():
+                    Path(entry["path"]).unlink()
+                expired.append(key)
+        for key in expired:
+            del cache[key]
 
 def cut_clips(job_id, video_path, clips):
     job_dir = CLIPS_DIR / job_id
@@ -88,7 +90,7 @@ def cut_clips(job_id, video_path, clips):
 def run_youtube_job(job_id, url, clips):
     try:
         clean_expired_cache()
-        cached = get_cached_video(url)
+        cached = get_cached_video(url, video_cache)
 
         if cached:
             jobs[job_id]["status"] = "cutting"
@@ -103,10 +105,11 @@ def run_youtube_job(job_id, url, clips):
         video_path = CLIPS_DIR / f"video_{uuid.uuid4().hex[:8]}.mp4"
 
         cookies_path = Path("/app/cookies.txt")
-cmd = [
+        cmd = [
             "yt-dlp",
             "--no-check-certificates",
             "--extractor-args", "youtube:player_client=android",
+            "--retries", "3",
             "-f", "best[ext=mp4]/best",
             "--newline",
             "-o", str(video_path),
@@ -117,7 +120,6 @@ cmd = [
 
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        dl_stderr = ""
         for line in process.stdout:
             line = line.strip()
             match = re.search(r'(\d+\.?\d*)%', line)
@@ -152,12 +154,15 @@ cmd = [
         jobs[job_id]["status"] = "error"
         jobs[job_id]["error"] = str(e)
 
-def run_upload_job(job_id, video_path, clips):
+def run_upload_job(job_id, upload_id, clips):
     try:
+        clean_expired_cache()
+        video_path = get_cached_video(upload_id, upload_cache)
+        if not video_path:
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["error"] = "El vídeo ha expirado (45 min), sube de nuevo"
+            return
         cut_clips(job_id, video_path, clips)
-        # Clean uploaded file after cutting
-        if Path(video_path).exists():
-            Path(video_path).unlink()
     except Exception as e:
         jobs[job_id]["status"] = "error"
         jobs[job_id]["error"] = str(e)
@@ -175,15 +180,42 @@ def upload_video():
     if file.filename == "":
         return jsonify({"error": "Nombre de archivo vacío"}), 400
 
-    filename = f"{uuid.uuid4().hex[:8]}_{secure_filename(file.filename)}"
+    upload_id = uuid.uuid4().hex[:8]
+    filename = f"{upload_id}_{secure_filename(file.filename)}"
     upload_path = UPLOADS_DIR / filename
     file.save(str(upload_path))
-    return jsonify({"upload_id": filename})
+
+    # Save to upload cache (45 min)
+    upload_cache[upload_id] = {
+        "path": str(upload_path),
+        "downloaded_at": time.time(),
+        "name": file.filename
+    }
+
+    return jsonify({
+        "upload_id": upload_id,
+        "name": file.filename,
+        "size": round(upload_path.stat().st_size / (1024*1024), 1)
+    })
+
+@app.route("/api/recent")
+def recent_uploads():
+    clean_expired_cache()
+    result = []
+    for uid, entry in upload_cache.items():
+        age_minutes = (time.time() - entry["downloaded_at"]) / 60
+        remaining = round(CACHE_MINUTES - age_minutes)
+        result.append({
+            "upload_id": uid,
+            "name": entry.get("name", uid),
+            "remaining_minutes": remaining
+        })
+    return jsonify(result)
 
 @app.route("/api/start", methods=["POST"])
 def start_job():
     data = request.json
-    mode = data.get("mode", "youtube")
+    mode = data.get("mode", "upload")
     clips = data.get("clips", [])
 
     if not clips:
@@ -200,12 +232,11 @@ def start_job():
 
     elif mode == "upload":
         upload_id = data.get("upload_id", "").strip()
-        video_path = UPLOADS_DIR / upload_id
-        if not video_path.exists():
-            return jsonify({"error": "Archivo no encontrado, sube el vídeo primero"}), 400
+        if not upload_id:
+            return jsonify({"error": "Sube un vídeo primero"}), 400
         jobs[job_id]["status"] = "cutting"
         jobs[job_id]["progress"] = "Preparando clips..."
-        thread = threading.Thread(target=run_upload_job, args=(job_id, str(video_path), clips), daemon=True)
+        thread = threading.Thread(target=run_upload_job, args=(job_id, upload_id, clips), daemon=True)
 
     else:
         return jsonify({"error": "Modo desconocido"}), 400
