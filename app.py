@@ -64,12 +64,16 @@ def run_clip_job(job_id, url, clips):
 
             process = subprocess.Popen([
                 "yt-dlp",
+                "--no-check-certificates",
+                "--extractor-retries", "3",
+                "--retries", "3",
                 "-f", "best[ext=mp4]/best",
                 "--newline",
                 "-o", str(video_path),
                 url
-            ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
+            dl_stderr = ""
             for line in process.stdout:
                 line = line.strip()
                 match = re.search(r'(\d+\.?\d*)%', line)
@@ -92,11 +96,13 @@ def run_clip_job(job_id, url, clips):
                 elif "Destination" in line:
                     jobs[job_id]["progress"] = "Preparando descarga..."
 
+            dl_stderr = process.stderr.read()
             process.wait()
 
             if process.returncode != 0 or not video_path.exists():
                 jobs[job_id]["status"] = "error"
-                jobs[job_id]["error"] = "Error al descargar el vídeo. Comprueba la URL."
+                error_msg = dl_stderr[-600:] if dl_stderr else "Error desconocido al descargar"
+                jobs[job_id]["error"] = error_msg
                 return
 
             video_cache[url] = {
@@ -132,7 +138,7 @@ def run_clip_job(job_id, url, clips):
                     "path": str(clip_path),
                     "size": round(clip_path.stat().st_size / (1024*1024), 1)
                 })
-                jobs[job_id]["progress"] = f"✓ Clip {i+1} listo — cortando {i+2} de {total}..." if i+1 < total else f"✓ Clip {i+1} listo"
+                jobs[job_id]["progress"] = f"✓ Clip {i+1} listo" + (f" — cortando {i+2} de {total}..." if i+1 < total else "")
                 jobs[job_id]["percent"] = round(((i+1) / total) * 100)
 
         jobs[job_id]["status"] = "done"
