@@ -103,11 +103,10 @@ def run_youtube_job(job_id, url, clips):
         video_path = CLIPS_DIR / f"video_{uuid.uuid4().hex[:8]}.mp4"
 
         cookies_path = Path("/app/cookies.txt")
-        cmd = [
+cmd = [
             "yt-dlp",
             "--no-check-certificates",
-            "--extractor-retries", "3",
-            "--retries", "3",
+            "--extractor-args", "youtube:player_client=android",
             "-f", "best[ext=mp4]/best",
             "--newline",
             "-o", str(video_path),
