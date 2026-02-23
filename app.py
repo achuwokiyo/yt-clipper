@@ -6,11 +6,15 @@ import time
 import re
 from flask import Flask, render_template, request, jsonify, send_file
 from pathlib import Path
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2GB max upload
 
 CLIPS_DIR = Path("/tmp/clips")
 CLIPS_DIR.mkdir(exist_ok=True)
+UPLOADS_DIR = Path("/tmp/uploads")
+UPLOADS_DIR.mkdir(exist_ok=True)
 
 jobs = {}
 video_cache = {}
@@ -19,34 +23,69 @@ CACHE_MINUTES = 30
 def time_to_seconds(minutes, seconds):
     return int(minutes) * 60 + int(seconds)
 
-def get_cached_video(url):
-    if url in video_cache:
-        entry = video_cache[url]
+def get_cached_video(key):
+    if key in video_cache:
+        entry = video_cache[key]
         age_minutes = (time.time() - entry["downloaded_at"]) / 60
         if age_minutes < CACHE_MINUTES and Path(entry["path"]).exists():
             return Path(entry["path"])
         else:
             if Path(entry["path"]).exists():
                 Path(entry["path"]).unlink()
-            del video_cache[url]
+            del video_cache[key]
     return None
 
 def clean_expired_cache():
     expired = []
-    for url, entry in video_cache.items():
+    for key, entry in video_cache.items():
         age_minutes = (time.time() - entry["downloaded_at"]) / 60
         if age_minutes >= CACHE_MINUTES:
             if Path(entry["path"]).exists():
                 Path(entry["path"]).unlink()
-            expired.append(url)
-    for url in expired:
-        del video_cache[url]
+            expired.append(key)
+    for key in expired:
+        del video_cache[key]
 
-def run_clip_job(job_id, url, clips):
+def cut_clips(job_id, video_path, clips):
     job_dir = CLIPS_DIR / job_id
     job_dir.mkdir(exist_ok=True)
     output_files = []
+    total = len(clips)
 
+    jobs[job_id]["status"] = "cutting"
+    for i, clip in enumerate(clips):
+        jobs[job_id]["progress"] = f"Cortando clip {i+1} de {total}..."
+        jobs[job_id]["percent"] = round((i / total) * 100)
+
+        start_sec = time_to_seconds(clip["minutes"], clip["seconds"])
+        duration = int(clip["duration"])
+        clip_name = f"clip_{i+1:02d}_{clip['minutes']}m{clip['seconds']}s.mp4"
+        clip_path = job_dir / clip_name
+
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-ss", str(start_sec),
+            "-i", str(video_path),
+            "-t", str(duration),
+            "-c", "copy",
+            str(clip_path)
+        ], capture_output=True, text=True, timeout=60)
+
+        if clip_path.exists():
+            output_files.append({
+                "name": clip_name,
+                "path": str(clip_path),
+                "size": round(clip_path.stat().st_size / (1024*1024), 1)
+            })
+            jobs[job_id]["progress"] = f"✓ Clip {i+1} listo" + (f" — cortando {i+2} de {total}..." if i+1 < total else "")
+            jobs[job_id]["percent"] = round(((i+1) / total) * 100)
+
+    jobs[job_id]["status"] = "done"
+    jobs[job_id]["percent"] = 100
+    jobs[job_id]["files"] = output_files
+    jobs[job_id]["progress"] = f"✓ {len(output_files)} clips listos para descargar"
+
+def run_youtube_job(job_id, url, clips):
     try:
         clean_expired_cache()
         cached = get_cached_video(url)
@@ -55,101 +94,71 @@ def run_clip_job(job_id, url, clips):
             jobs[job_id]["status"] = "cutting"
             jobs[job_id]["progress"] = "✓ Vídeo en caché — cortando directamente..."
             jobs[job_id]["percent"] = 100
-            video_path = cached
-        else:
-            jobs[job_id]["status"] = "downloading"
-            jobs[job_id]["progress"] = "Conectando con YouTube..."
-            jobs[job_id]["percent"] = 0
-            video_path = CLIPS_DIR / f"video_{uuid.uuid4().hex[:8]}.mp4"
+            cut_clips(job_id, cached, clips)
+            return
 
-            process = subprocess.Popen([
-                "yt-dlp",
-                "--no-check-certificates",
-                "--extractor-retries", "3",
-                "--retries", "3",
-                "--cookies", "/app/cookies.txt",
-                "-f", "best[ext=mp4]/best",
-                "--newline",
-                "-o", str(video_path),
-                url
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        jobs[job_id]["status"] = "downloading"
+        jobs[job_id]["progress"] = "Conectando con YouTube..."
+        jobs[job_id]["percent"] = 0
+        video_path = CLIPS_DIR / f"video_{uuid.uuid4().hex[:8]}.mp4"
 
-            dl_stderr = ""
-            for line in process.stdout:
-                line = line.strip()
-                match = re.search(r'(\d+\.?\d*)%', line)
-                if match:
-                    pct = float(match.group(1))
-                    jobs[job_id]["percent"] = round(pct)
-                    if pct < 25:
-                        jobs[job_id]["progress"] = f"Descargando vídeo... {round(pct)}%"
-                    elif pct < 50:
-                        jobs[job_id]["progress"] = f"Descargando vídeo... {round(pct)}%"
-                    elif pct < 75:
-                        jobs[job_id]["progress"] = f"Más de la mitad... {round(pct)}%"
-                    elif pct < 95:
-                        jobs[job_id]["progress"] = f"Casi listo... {round(pct)}%"
-                    else:
-                        jobs[job_id]["progress"] = f"Finalizando descarga... {round(pct)}%"
-                elif "Merging" in line:
-                    jobs[job_id]["progress"] = "Mezclando audio y vídeo..."
-                    jobs[job_id]["percent"] = 99
-                elif "Destination" in line:
-                    jobs[job_id]["progress"] = "Preparando descarga..."
+        cookies_path = Path("/app/cookies.txt")
+        cmd = [
+            "yt-dlp",
+            "--no-check-certificates",
+            "--extractor-retries", "3",
+            "--retries", "3",
+            "-f", "best[ext=mp4]/best",
+            "--newline",
+            "-o", str(video_path),
+        ]
+        if cookies_path.exists():
+            cmd += ["--cookies", str(cookies_path)]
+        cmd.append(url)
 
-            dl_stderr = process.stderr.read()
-            process.wait()
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-            if process.returncode != 0 or not video_path.exists():
-                jobs[job_id]["status"] = "error"
-                error_msg = dl_stderr[-600:] if dl_stderr else "Error desconocido al descargar"
-                jobs[job_id]["error"] = error_msg
-                return
+        dl_stderr = ""
+        for line in process.stdout:
+            line = line.strip()
+            match = re.search(r'(\d+\.?\d*)%', line)
+            if match:
+                pct = float(match.group(1))
+                jobs[job_id]["percent"] = round(pct)
+                if pct < 50:
+                    jobs[job_id]["progress"] = f"Descargando vídeo... {round(pct)}%"
+                elif pct < 90:
+                    jobs[job_id]["progress"] = f"Casi listo... {round(pct)}%"
+                else:
+                    jobs[job_id]["progress"] = f"Finalizando... {round(pct)}%"
+            elif "Merging" in line:
+                jobs[job_id]["progress"] = "Mezclando audio y vídeo..."
+                jobs[job_id]["percent"] = 99
 
-            video_cache[url] = {
-                "path": str(video_path),
-                "downloaded_at": time.time()
-            }
+        dl_stderr = process.stderr.read()
+        process.wait()
 
-        # Cut clips
-        jobs[job_id]["status"] = "cutting"
-        total = len(clips)
+        if process.returncode != 0 or not video_path.exists():
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["error"] = dl_stderr[-600:] if dl_stderr else "Error desconocido al descargar"
+            return
 
-        for i, clip in enumerate(clips):
-            jobs[job_id]["progress"] = f"Cortando clip {i+1} de {total}..."
-            jobs[job_id]["percent"] = round((i / total) * 100)
-
-            start_sec = time_to_seconds(clip["minutes"], clip["seconds"])
-            duration = int(clip["duration"])
-            clip_name = f"clip_{i+1:02d}_{clip['minutes']}m{clip['seconds']}s.mp4"
-            clip_path = job_dir / clip_name
-
-            subprocess.run([
-                "ffmpeg", "-y",
-                "-ss", str(start_sec),
-                "-i", str(video_path),
-                "-t", str(duration),
-                "-c", "copy",
-                str(clip_path)
-            ], capture_output=True, text=True, timeout=60)
-
-            if clip_path.exists():
-                output_files.append({
-                    "name": clip_name,
-                    "path": str(clip_path),
-                    "size": round(clip_path.stat().st_size / (1024*1024), 1)
-                })
-                jobs[job_id]["progress"] = f"✓ Clip {i+1} listo" + (f" — cortando {i+2} de {total}..." if i+1 < total else "")
-                jobs[job_id]["percent"] = round(((i+1) / total) * 100)
-
-        jobs[job_id]["status"] = "done"
-        jobs[job_id]["percent"] = 100
-        jobs[job_id]["files"] = output_files
-        jobs[job_id]["progress"] = f"✓ {len(output_files)} clips listos para descargar"
+        video_cache[url] = {"path": str(video_path), "downloaded_at": time.time()}
+        cut_clips(job_id, video_path, clips)
 
     except subprocess.TimeoutExpired:
         jobs[job_id]["status"] = "error"
         jobs[job_id]["error"] = "Timeout: el vídeo tardó demasiado"
+    except Exception as e:
+        jobs[job_id]["status"] = "error"
+        jobs[job_id]["error"] = str(e)
+
+def run_upload_job(job_id, video_path, clips):
+    try:
+        cut_clips(job_id, video_path, clips)
+        # Clean uploaded file after cutting
+        if Path(video_path).exists():
+            Path(video_path).unlink()
     except Exception as e:
         jobs[job_id]["status"] = "error"
         jobs[job_id]["error"] = str(e)
@@ -159,18 +168,49 @@ def run_clip_job(job_id, url, clips):
 def index():
     return render_template("index.html")
 
+@app.route("/api/upload", methods=["POST"])
+def upload_video():
+    if "video" not in request.files:
+        return jsonify({"error": "No se recibió ningún archivo"}), 400
+    file = request.files["video"]
+    if file.filename == "":
+        return jsonify({"error": "Nombre de archivo vacío"}), 400
+
+    filename = f"{uuid.uuid4().hex[:8]}_{secure_filename(file.filename)}"
+    upload_path = UPLOADS_DIR / filename
+    file.save(str(upload_path))
+    return jsonify({"upload_id": filename})
+
 @app.route("/api/start", methods=["POST"])
 def start_job():
     data = request.json
-    url = data.get("url", "").strip()
+    mode = data.get("mode", "youtube")
     clips = data.get("clips", [])
-    if not url:
-        return jsonify({"error": "URL requerida"}), 400
+
     if not clips:
         return jsonify({"error": "Al menos un clip requerido"}), 400
+
     job_id = str(uuid.uuid4())[:8]
     jobs[job_id] = {"status": "queued", "progress": "En cola...", "percent": 0, "files": [], "error": None}
-    thread = threading.Thread(target=run_clip_job, args=(job_id, url, clips), daemon=True)
+
+    if mode == "youtube":
+        url = data.get("url", "").strip()
+        if not url:
+            return jsonify({"error": "URL requerida"}), 400
+        thread = threading.Thread(target=run_youtube_job, args=(job_id, url, clips), daemon=True)
+
+    elif mode == "upload":
+        upload_id = data.get("upload_id", "").strip()
+        video_path = UPLOADS_DIR / upload_id
+        if not video_path.exists():
+            return jsonify({"error": "Archivo no encontrado, sube el vídeo primero"}), 400
+        jobs[job_id]["status"] = "cutting"
+        jobs[job_id]["progress"] = "Preparando clips..."
+        thread = threading.Thread(target=run_upload_job, args=(job_id, str(video_path), clips), daemon=True)
+
+    else:
+        return jsonify({"error": "Modo desconocido"}), 400
+
     thread.start()
     return jsonify({"job_id": job_id})
 
