@@ -17,57 +17,60 @@ def time_to_seconds(minutes, seconds):
     return int(minutes) * 60 + int(seconds)
 
 def run_clip_job(job_id, url, clips):
-    jobs[job_id]["status"] = "downloading"
-    jobs[job_id]["progress"] = "Descargando vídeo de YouTube..."
-
     job_dir = CLIPS_DIR / job_id
     job_dir.mkdir(exist_ok=True)
-    video_path = job_dir / "original.mp4"
+    output_files = []
 
     try:
-        # Download video
-        result = subprocess.run([
-            "yt-dlp",
-            "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            "--merge-output-format", "mp4",
-            "-o", str(video_path),
-            url
-        ], capture_output=True, text=True, timeout=300)
-
-        if result.returncode != 0:
-            jobs[job_id]["status"] = "error"
-            jobs[job_id]["error"] = f"Error descargando: {result.stderr[-300:]}"
-            return
-
-        jobs[job_id]["status"] = "cutting"
-        output_files = []
-
         for i, clip in enumerate(clips):
-            jobs[job_id]["progress"] = f"Cortando clip {i+1} de {len(clips)}..."
+            jobs[job_id]["status"] = "downloading"
+            jobs[job_id]["progress"] = f"Descargando clip {i+1} de {len(clips)}..."
+
             start_sec = time_to_seconds(clip["minutes"], clip["seconds"])
             duration = int(clip["duration"])
+            # Add 2s buffer so ffmpeg copy has keyframe margin
+            end_sec = start_sec + duration + 2
             clip_name = f"clip_{i+1:02d}_{clip['minutes']}m{clip['seconds']}s.mp4"
             clip_path = job_dir / clip_name
+            temp_path = job_dir / f"temp_{i}.mp4"
 
+            # Download ONLY the needed section (much faster)
+            dl_result = subprocess.run([
+                "yt-dlp",
+                "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+                "--merge-output-format", "mp4",
+                "--download-sections", f"*{start_sec}-{end_sec}",
+                "--force-keyframes-at-cuts",
+                "-o", str(temp_path),
+                url
+            ], capture_output=True, text=True, timeout=120)
+
+            if dl_result.returncode != 0 or not temp_path.exists():
+                jobs[job_id]["status"] = "error"
+                jobs[job_id]["error"] = f"Error en clip {i+1}: {dl_result.stderr[-300:]}"
+                return
+
+            jobs[job_id]["progress"] = f"Cortando clip {i+1} de {len(clips)}..."
+
+            # Trim exactly to requested duration
             cut_result = subprocess.run([
                 "ffmpeg", "-y",
-                "-ss", str(start_sec),
-                "-i", str(video_path),
+                "-i", str(temp_path),
                 "-t", str(duration),
                 "-c", "copy",
                 str(clip_path)
-            ], capture_output=True, text=True, timeout=120)
+            ], capture_output=True, text=True, timeout=60)
 
-            if cut_result.returncode == 0 and clip_path.exists():
+            # Clean temp file
+            if temp_path.exists():
+                temp_path.unlink()
+
+            if clip_path.exists():
                 output_files.append({
                     "name": clip_name,
                     "path": str(clip_path),
                     "size": round(clip_path.stat().st_size / (1024*1024), 1)
                 })
-
-        # Remove original to save space
-        if video_path.exists():
-            video_path.unlink()
 
         jobs[job_id]["status"] = "done"
         jobs[job_id]["files"] = output_files
@@ -75,7 +78,7 @@ def run_clip_job(job_id, url, clips):
 
     except subprocess.TimeoutExpired:
         jobs[job_id]["status"] = "error"
-        jobs[job_id]["error"] = "Timeout: el vídeo tardó demasiado en descargarse"
+        jobs[job_id]["error"] = "Timeout: el clip tardó demasiado"
     except Exception as e:
         jobs[job_id]["status"] = "error"
         jobs[job_id]["error"] = str(e)
