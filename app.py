@@ -67,6 +67,7 @@ def run_clip_job(job_id, url, clips):
                 "--no-check-certificates",
                 "--extractor-retries", "3",
                 "--retries", "3",
+                "--cookies", "/app/cookies.txt",
                 "-f", "best[ext=mp4]/best",
                 "--newline",
                 "-o", str(video_path),
