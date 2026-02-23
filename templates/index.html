@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>YT Clipper</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --border: #2a2a3a;
+    --accent: #ff3c5f;
+    --accent2: #ff8c42;
+    --text: #f0f0f5;
+    --muted: #6b6b80;
+    --success: #2eff9e;
+    --warning: #ffd166;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(255,60,95,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,60,95,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 40px 16px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,60,95,0.1);
+    border: 1px solid rgba(255,60,95,0.3);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+  .badge::before {
+    content: '';
+    width: 5px; height: 5px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100%{opacity:1;transform:scale(1)}
+    50%{opacity:.4;transform:scale(.8)}
+  }
+
+  h1 {
+    font-size: clamp(28px, 7vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 10px;
+  }
+  h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 36px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+  .card-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Input styles */
+  input[type="text"], input[type="number"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    padding: 13px 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+  input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(255,60,95,0.1);
+  }
+  input::placeholder { color: var(--muted); }
+  input[type="number"] { -moz-appearance: textfield; }
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  /* Counter */
+  .counter-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .counter-label { font-size: 15px; font-weight: 600; }
+  .counter-controls {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .counter-btn {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 22px;
+    font-weight: 300;
+    width: 48px;
+    height: 48px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: 'DM Mono', monospace;
+    touch-action: manipulation;
+  }
+  .counter-btn:active { background: rgba(255,60,95,0.15); }
+  .counter-value {
+    min-width: 52px;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--accent);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Clip rows */
+  .clips-grid { display: flex; flex-direction: column; gap: 10px; }
+
+  .clip-row {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    animation: slideIn 0.2s ease both;
+    transition: border-color 0.2s;
+  }
+  .clip-row.filled { border-color: rgba(46,255,158,0.2); }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .clip-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .clip-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+    background: rgba(255,60,95,0.1);
+    border: 1px solid rgba(255,60,95,0.2);
+    border-radius: 6px;
+    padding: 3px 8px;
+    flex-shrink: 0;
+  }
+  .clip-status {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: auto;
+    transition: color 0.2s;
+  }
+  .clip-row.filled .clip-status { color: var(--success); }
+
+  .clip-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .clip-field { display: flex; flex-direction: column; gap: 4px; }
+  .clip-field-label {
+    font-size: 9px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .clip-field input { padding: 10px 10px; font-size: 16px; }
+
+  /* Duration presets */
+  .dur-presets {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .dur-preset {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+    touch-action: manipulation;
+  }
+  .dur-preset:active, .dur-preset.active {
+    background: rgba(255,60,95,0.1);
+    border-color: rgba(255,60,95,0.3);
+    color: var(--accent);
+  }
+
+  /* Generate button */
+  .generate-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 14px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    padding: 18px;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    touch-action: manipulation;
+    -webkit-appearance: none;
+  }
+  .generate-btn:active {
+    transform: scale(0.98);
+    box-shadow: 0 8px 30px rgba(255,60,95,0.25);
+  }
+  .generate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Progress */
+  .progress-section {
+    display: none;
+    margin-top: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+  }
+  .progress-section.visible { display: block; }
+
+  .progress-spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .progress-text {
+    font-size: 14px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .progress-step {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  /* Results */
+  .results-section {
+    display: none;
+    margin-top: 20px;
+  }
+  .results-section.visible { display: block; }
+
+  .results-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 12px;
+  }
+
+  .file-card {
+    background: var(--surface);
+    border: 1px solid rgba(46,255,158,0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    animation: slideIn 0.25s ease both;
+  }
+  .file-icon {
+    width: 36px; height: 36px;
+    background: rgba(46,255,158,0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .file-size {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .download-btn {
+    background: rgba(46,255,158,0.1);
+    border: 1px solid rgba(46,255,158,0.3);
+    color: var(--success);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    touch-action: manipulation;
+    transition: background 0.15s;
+  }
+  .download-btn:active { background: rgba(46,255,158,0.2); }
+
+  /* Error */
+  .error-box {
+    background: rgba(255,60,95,0.08);
+    border: 1px solid rgba(255,60,95,0.25);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    display: none;
+  }
+  .error-box.visible { display: block; }
+
+  .reset-btn {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 14px;
+    cursor: pointer;
+    margin-top: 12px;
+    touch-action: manipulation;
+    transition: border-color 0.2s;
+  }
+  .reset-btn:active { border-color: var(--accent); }
+
+  /* Tip */
+  .tip {
+    margin-top: 28px;
+    padding: 16px;
+    background: rgba(255,140,66,0.05);
+    border: 1px solid rgba(255,140,66,0.15);
+    border-radius: 12px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+    font-family: 'DM Mono', monospace;
+  }
+  .tip strong { color: var(--accent2); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="badge">YT Clipper</div>
+  <h1>Extrae clips de<br><span>YouTube</span></h1>
+  <p class="subtitle">Introduce la URL, marca los momentos exactos y descarga tus clips directamente.</p>
+
+  <!-- Form -->
+  <div id="formSection">
+
+    <!-- URL -->
+    <div class="card">
+      <div class="card-label">URL del vídeo</div>
+      <input type="text" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" autocorrect="off" spellcheck="false" />
+    </div>
+
+    <!-- Counter -->
+    <div class="card">
+      <div class="counter-row">
+        <div class="counter-label">¿Cuántos clips?</div>
+        <div class="counter-controls">
+          <button class="counter-btn" onclick="changeCount(-1)">−</button>
+          <div class="counter-value" id="countDisplay">3</div>
+          <button class="counter-btn" onclick="changeCount(1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clips -->
+    <div class="card">
+      <div class="card-label">Configura los momentos</div>
+      <div class="clips-grid" id="clipsGrid"></div>
+    </div>
+
+    <button class="generate-btn" onclick="startJob()" id="generateBtn">
+      ⚡ Extraer clips
+    </button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-spinner"></div>
+    <div class="progress-step" id="progressStep">Procesando...</div>
+    <div class="progress-text" id="progressText">Esto puede tardar unos minutos</div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="results-title">✓ Clips listos para descargar</div>
+    <div id="filesList"></div>
+    <button class="reset-btn" onclick="reset()">← Crear más clips</button>
+  </div>
+
+  <div class="tip">
+    <strong>Tip:</strong> Los clips se generan en el servidor y están disponibles para descargar durante 1 hora. Después se eliminan automáticamente.
+  </div>
+
+</div>
+
+<script>
+  let clipCount = 3;
+  let pollInterval = null;
+  let currentJobId = null;
+
+  function changeCount(delta) {
+    clipCount = Math.max(1, Math.min(15, clipCount + delta));
+    document.getElementById('countDisplay').textContent = clipCount;
+    renderClips();
+  }
+
+  function renderClips() {
+    const grid = document.getElementById('clipsGrid');
+    const current = grid.querySelectorAll('.clip-row').length;
+
+    for (let i = current; i < clipCount; i++) {
+      const row = document.createElement('div');
+      row.className = 'clip-row';
+      row.id = `clip-${i}`;
+      row.innerHTML = `
+        <div class="clip-top">
+          <div class="clip-num">Clip #${i+1}</div>
+          <div class="clip-status" id="status-${i}">pendiente</div>
+        </div>
+        <div class="clip-fields">
+          <div class="clip-field">
+            <div class="clip-field-label">Minutos</div>
+            <input type="number" inputmode="numeric" min="0" placeholder="0" oninput="checkFilled(${i})" id="min-${i}">
+          </div>
+          <div class="clip-field">
+            <div class="clip-field-label">Segundos</div>
+            <input type="number" inputmode="numeric" min="0" max="59" placeholder="00" oninput="checkFilled(${i})" id="sec-${i}">
+          </div>
+          <div class="clip-field">
+            <div class="clip-field-label">Duración (s)</div>
+            <input type="number" inputmode="numeric" min="1" max="300" placeholder="10" value="10" oninput="checkFilled(${i})" id="dur-${i}">
+          </div>
+        </div>
+        <div class="dur-presets">
+          <div class="dur-preset" onclick="setDur(${i},5)">5s</div>
+          <div class="dur-preset active" onclick="setDur(${i},10)">10s</div>
+          <div class="dur-preset" onclick="setDur(${i},15)">15s</div>
+          <div class="dur-preset" onclick="setDur(${i},30)">30s</div>
+          <div class="dur-preset" onclick="setDur(${i},60)">1min</div>
+        </div>
+      `;
+      grid.appendChild(row);
+    }
+
+    while (grid.querySelectorAll('.clip-row').length > clipCount) {
+      grid.removeChild(grid.lastChild);
+    }
+  }
+
+  function setDur(i, val) {
+    document.getElementById(`dur-${i}`).value = val;
+    const presets = document.querySelectorAll(`#clip-${i} .dur-preset`);
+    presets.forEach(p => {
+      p.classList.toggle('active', parseInt(p.textContent) === val || p.textContent === val+'s');
+    });
+    checkFilled(i);
+  }
+
+  function checkFilled(i) {
+    const minVal = document.getElementById(`min-${i}`).value;
+    const secVal = document.getElementById(`sec-${i}`).value;
+    const durVal = document.getElementById(`dur-${i}`).value;
+    const row = document.getElementById(`clip-${i}`);
+    const status = document.getElementById(`status-${i}`);
+    const isReady = (minVal !== '' || secVal !== '') && durVal !== '';
+    row.classList.toggle('filled', isReady);
+    if (isReady) {
+      const m = minVal || '0';
+      const s = (secVal || '0').padStart(2, '0');
+      status.textContent = `${m}:${s} · ${durVal}s`;
+    } else {
+      status.textContent = 'pendiente';
+    }
+  }
+
+  async function startJob() {
+    const url = document.getElementById('ytUrl').value.trim();
+    if (!url) { alert('Introduce la URL del vídeo'); return; }
+
+    const clips = [];
+    for (let i = 0; i < clipCount; i++) {
+      const minVal = document.getElementById(`min-${i}`).value;
+      const secVal = document.getElementById(`sec-${i}`).value;
+      const durVal = document.getElementById(`dur-${i}`).value;
+      if (minVal !== '' || secVal !== '') {
+        clips.push({
+          minutes: minVal || '0',
+          seconds: secVal || '0',
+          duration: durVal || '10'
+        });
+      }
+    }
+
+    if (clips.length === 0) { alert('Rellena al menos un clip'); return; }
+
+    document.getElementById('formSection').style.display = 'none';
+    document.getElementById('progressSection').classList.add('visible');
+    document.getElementById('errorBox').classList.remove('visible');
+
+    try {
+      const res = await fetch('/api/start', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ url, clips })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      
+      currentJobId = data.job_id;
+      pollStatus();
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  function pollStatus() {
+    pollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/status/${currentJobId}`);
+        const data = await res.json();
+
+        document.getElementById('progressText').textContent = data.progress || '';
+
+        if (data.status === 'downloading') {
+          document.getElementById('progressStep').textContent = '📥 Descargando vídeo...';
+        } else if (data.status === 'cutting') {
+          document.getElementById('progressStep').textContent = '✂️ Cortando clips...';
+        }
+
+        if (data.status === 'done') {
+          clearInterval(pollInterval);
+          showResults(data.files);
+        } else if (data.status === 'error') {
+          clearInterval(pollInterval);
+          showError(data.error || 'Error desconocido');
+        }
+      } catch(e) {
+        clearInterval(pollInterval);
+        showError('Error de conexión');
+      }
+    }, 2000);
+  }
+
+  function showResults(files) {
+    document.getElementById('progressSection').classList.remove('visible');
+    const section = document.getElementById('resultsSection');
+    const list = document.getElementById('filesList');
+    list.innerHTML = '';
+
+    files.forEach(f => {
+      list.innerHTML += `
+        <div class="file-card">
+          <div class="file-icon">🎬</div>
+          <div class="file-info">
+            <div class="file-name">${f.name}</div>
+            <div class="file-size">${f.size} MB</div>
+          </div>
+          <a class="download-btn" href="/api/download/${currentJobId}/${f.name}" download="${f.name}">
+            ↓ Descargar
+          </a>
+        </div>
+      `;
+    });
+
+    section.classList.add('visible');
+  }
+
+  function showError(msg) {
+    document.getElementById('progressSection').classList.remove('visible');
+    const eb = document.getElementById('errorBox');
+    eb.textContent = '⚠ ' + msg;
+    eb.classList.add('visible');
+    document.getElementById('formSection').style.display = 'block';
+  }
+
+  function reset() {
+    document.getElementById('resultsSection').classList.remove('visible');
+    document.getElementById('formSection').style.display = 'block';
+    document.getElementById('errorBox').classList.remove('visible');
+    currentJobId = null;
+  }
+
+  renderClips();
+</script>
+</body>
+</html>
