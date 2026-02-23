@@ -9,7 +9,7 @@ from pathlib import Path
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024 * 1024  # 2GB max upload
+app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024 * 1024  # 2GB max upload
 
 CLIPS_DIR = Path("/tmp/clips")
 CLIPS_DIR.mkdir(exist_ok=True)
