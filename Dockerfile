@@ -1,7 +1,12 @@
 FROM python:3.11-slim
 
-# Install ffmpeg
-RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+# Install ffmpeg + Node.js (needed for yt-dlp n challenge)
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    nodejs \
+    npm \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
