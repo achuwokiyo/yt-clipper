@@ -40,7 +40,6 @@ def run_clip_job(job_id, url, clips):
                 "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
                 "--merge-output-format", "mp4",
                 "--download-sections", f"*{start_sec}-{end_sec}",
-                "--force-keyframes-at-cuts",
                 "-o", str(temp_path),
                 url
             ], capture_output=True, text=True, timeout=120)
