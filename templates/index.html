@@ -33,7 +33,7 @@
     content: '';
     position: fixed;
     inset: 0;
-    background-image: 
+    background-image:
       linear-gradient(rgba(255,60,95,0.03) 1px, transparent 1px),
       linear-gradient(90deg, rgba(255,60,95,0.03) 1px, transparent 1px);
     background-size: 40px 40px;
@@ -49,7 +49,6 @@
     z-index: 1;
   }
 
-  /* Header */
   .badge {
     display: inline-flex;
     align-items: center;
@@ -97,7 +96,6 @@
     margin-bottom: 36px;
   }
 
-  /* Cards */
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -115,7 +113,6 @@
     font-family: 'DM Mono', monospace;
   }
 
-  /* Input styles */
   input[type="text"], input[type="number"] {
     width: 100%;
     background: var(--surface2);
@@ -138,7 +135,6 @@
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-  /* Counter */
   .counter-row {
     display: flex;
     align-items: center;
@@ -184,7 +180,6 @@
     justify-content: center;
   }
 
-  /* Clip rows */
   .clips-grid { display: flex; flex-direction: column; gap: 10px; }
 
   .clip-row {
@@ -243,7 +238,6 @@
   }
   .clip-field input { padding: 10px 10px; font-size: 16px; }
 
-  /* Duration presets */
   .dur-presets {
     display: flex;
     gap: 6px;
@@ -268,7 +262,6 @@
     color: var(--accent);
   }
 
-  /* Generate button */
   .generate-btn {
     width: 100%;
     background: linear-gradient(135deg, var(--accent), var(--accent2));
@@ -289,45 +282,114 @@
     transform: scale(0.98);
     box-shadow: 0 8px 30px rgba(255,60,95,0.25);
   }
-  .generate-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 
-  /* Progress */
+  /* ── Progress section ── */
   .progress-section {
     display: none;
     margin-top: 20px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 24px;
+    padding: 28px 24px;
     text-align: center;
   }
   .progress-section.visible { display: block; }
 
   .progress-spinner {
-    width: 48px; height: 48px;
+    width: 44px; height: 44px;
     border: 3px solid var(--border);
     border-top-color: var(--accent);
     border-radius: 50%;
-    margin: 0 auto 16px;
+    margin: 0 auto 18px;
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .progress-text {
-    font-size: 14px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-  }
   .progress-step {
     font-size: 18px;
     font-weight: 700;
     margin-bottom: 6px;
+    transition: all 0.3s;
   }
 
-  /* Results */
+  .progress-text {
+    font-size: 13px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    min-height: 20px;
+    transition: all 0.3s;
+    margin-bottom: 20px;
+  }
+
+  .progress-bar-wrap {
+    width: 100%;
+    background: var(--border);
+    border-radius: 100px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 100px;
+    transition: width 0.5s ease, background 0.5s ease;
+  }
+  .progress-bar-fill.cutting {
+    background: linear-gradient(90deg, var(--success), #7eb8ff);
+  }
+
+  .progress-pct {
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--accent);
+    transition: color 0.3s;
+  }
+  .progress-pct.cutting { color: var(--success); }
+
+  .progress-phase {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  .phase-dot {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .phase-dot::before {
+    content: '';
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .phase-dot.active {
+    color: var(--accent);
+    border-color: rgba(255,60,95,0.3);
+    background: rgba(255,60,95,0.08);
+  }
+  .phase-dot.active::before { background: var(--accent); animation: pulse 1.5s infinite; }
+  .phase-dot.done {
+    color: var(--success);
+    border-color: rgba(46,255,158,0.3);
+    background: rgba(46,255,158,0.06);
+  }
+  .phase-dot.done::before { background: var(--success); }
+
+  /* ── Results ── */
   .results-section {
     display: none;
     margin-top: 20px;
@@ -397,7 +459,6 @@
   }
   .download-btn:active { background: rgba(46,255,158,0.2); }
 
-  /* Error */
   .error-box {
     background: rgba(255,60,95,0.08);
     border: 1px solid rgba(255,60,95,0.25);
@@ -408,6 +469,7 @@
     font-size: 12px;
     color: var(--accent);
     display: none;
+    line-height: 1.6;
   }
   .error-box.visible { display: block; }
 
@@ -428,7 +490,6 @@
   }
   .reset-btn:active { border-color: var(--accent); }
 
-  /* Tip */
   .tip {
     margin-top: 28px;
     padding: 16px;
@@ -446,21 +507,16 @@
 <body>
 <div class="container">
 
-  <!-- Header -->
   <div class="badge">YT Clipper</div>
   <h1>Extrae clips de<br><span>YouTube</span></h1>
   <p class="subtitle">Introduce la URL, marca los momentos exactos y descarga tus clips directamente.</p>
 
-  <!-- Form -->
   <div id="formSection">
-
-    <!-- URL -->
     <div class="card">
       <div class="card-label">URL del vídeo</div>
       <input type="text" id="ytUrl" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off" autocorrect="off" spellcheck="false" />
     </div>
 
-    <!-- Counter -->
     <div class="card">
       <div class="counter-row">
         <div class="counter-label">¿Cuántos clips?</div>
@@ -472,25 +528,32 @@
       </div>
     </div>
 
-    <!-- Clips -->
     <div class="card">
       <div class="card-label">Configura los momentos</div>
       <div class="clips-grid" id="clipsGrid"></div>
     </div>
 
-    <button class="generate-btn" onclick="startJob()" id="generateBtn">
+    <button class="generate-btn" onclick="startJob()">
       ⚡ Extraer clips
     </button>
   </div>
 
   <!-- Progress -->
   <div class="progress-section" id="progressSection">
-    <div class="progress-spinner"></div>
+    <div class="progress-spinner" id="progressSpinner"></div>
     <div class="progress-step" id="progressStep">Procesando...</div>
-    <div class="progress-text" id="progressText">Esto puede tardar unos minutos</div>
+    <div class="progress-text" id="progressText">Iniciando...</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBarFill"></div>
+    </div>
+    <div class="progress-pct" id="progressPct">0%</div>
+    <div class="progress-phase">
+      <div class="phase-dot" id="phase-download">Descarga</div>
+      <div class="phase-dot" id="phase-cut">Corte</div>
+      <div class="phase-dot" id="phase-done">Listo</div>
+    </div>
   </div>
 
-  <!-- Error -->
   <div class="error-box" id="errorBox"></div>
 
   <!-- Results -->
@@ -501,7 +564,7 @@
   </div>
 
   <div class="tip">
-    <strong>Tip:</strong> Los clips se generan en el servidor y están disponibles para descargar durante 1 hora. Después se eliminan automáticamente.
+    <strong>Tip:</strong> El vídeo se guarda en caché 30 min. Si quieres cambiar algún clip del mismo vídeo, será instantáneo.
   </div>
 
 </div>
@@ -520,7 +583,6 @@
   function renderClips() {
     const grid = document.getElementById('clipsGrid');
     const current = grid.querySelectorAll('.clip-row').length;
-
     for (let i = current; i < clipCount; i++) {
       const row = document.createElement('div');
       row.className = 'clip-row';
@@ -554,7 +616,6 @@
       `;
       grid.appendChild(row);
     }
-
     while (grid.querySelectorAll('.clip-row').length > clipCount) {
       grid.removeChild(grid.lastChild);
     }
@@ -562,9 +623,8 @@
 
   function setDur(i, val) {
     document.getElementById(`dur-${i}`).value = val;
-    const presets = document.querySelectorAll(`#clip-${i} .dur-preset`);
-    presets.forEach(p => {
-      p.classList.toggle('active', parseInt(p.textContent) === val || p.textContent === val+'s');
+    document.querySelectorAll(`#clip-${i} .dur-preset`).forEach(p => {
+      p.classList.toggle('active', p.textContent === val+'s' || p.textContent === '1min' && val === 60);
     });
     checkFilled(i);
   }
@@ -578,12 +638,20 @@
     const isReady = (minVal !== '' || secVal !== '') && durVal !== '';
     row.classList.toggle('filled', isReady);
     if (isReady) {
-      const m = minVal || '0';
-      const s = (secVal || '0').padStart(2, '0');
-      status.textContent = `${m}:${s} · ${durVal}s`;
+      status.textContent = `${minVal||'0'}:${(secVal||'0').padStart(2,'0')} · ${durVal}s`;
     } else {
       status.textContent = 'pendiente';
     }
+  }
+
+  function setPhase(phase) {
+    const phases = ['download', 'cut', 'done'];
+    phases.forEach(p => {
+      const el = document.getElementById(`phase-${p}`);
+      el.className = 'phase-dot';
+      if (p === phase) el.classList.add('active');
+      else if (phases.indexOf(p) < phases.indexOf(phase)) el.classList.add('done');
+    });
   }
 
   async function startJob() {
@@ -596,19 +664,17 @@
       const secVal = document.getElementById(`sec-${i}`).value;
       const durVal = document.getElementById(`dur-${i}`).value;
       if (minVal !== '' || secVal !== '') {
-        clips.push({
-          minutes: minVal || '0',
-          seconds: secVal || '0',
-          duration: durVal || '10'
-        });
+        clips.push({ minutes: minVal || '0', seconds: secVal || '0', duration: durVal || '10' });
       }
     }
-
     if (clips.length === 0) { alert('Rellena al menos un clip'); return; }
 
     document.getElementById('formSection').style.display = 'none';
     document.getElementById('progressSection').classList.add('visible');
     document.getElementById('errorBox').classList.remove('visible');
+    document.getElementById('progressPct').textContent = '0%';
+    document.getElementById('progressBarFill').style.width = '0%';
+    setPhase('download');
 
     try {
       const res = await fetch('/api/start', {
@@ -618,7 +684,6 @@
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
-      
       currentJobId = data.job_id;
       pollStatus();
     } catch (e) {
@@ -632,34 +697,47 @@
         const res = await fetch(`/api/status/${currentJobId}`);
         const data = await res.json();
 
+        const pct = data.percent || 0;
+        const fill = document.getElementById('progressBarFill');
+        const pctEl = document.getElementById('progressPct');
+
         document.getElementById('progressText').textContent = data.progress || '';
+        fill.style.width = pct + '%';
+        pctEl.textContent = pct + '%';
 
         if (data.status === 'downloading') {
           document.getElementById('progressStep').textContent = '📥 Descargando vídeo...';
+          fill.classList.remove('cutting');
+          pctEl.classList.remove('cutting');
+          setPhase('download');
         } else if (data.status === 'cutting') {
           document.getElementById('progressStep').textContent = '✂️ Cortando clips...';
+          fill.classList.add('cutting');
+          pctEl.classList.add('cutting');
+          setPhase('cut');
         }
 
         if (data.status === 'done') {
           clearInterval(pollInterval);
-          showResults(data.files);
+          setPhase('done');
+          fill.style.width = '100%';
+          pctEl.textContent = '100%';
+          setTimeout(() => showResults(data.files), 400);
         } else if (data.status === 'error') {
           clearInterval(pollInterval);
           showError(data.error || 'Error desconocido');
         }
       } catch(e) {
         clearInterval(pollInterval);
-        showError('Error de conexión');
+        showError('Error de conexión con el servidor');
       }
-    }, 2000);
+    }, 1500);
   }
 
   function showResults(files) {
     document.getElementById('progressSection').classList.remove('visible');
-    const section = document.getElementById('resultsSection');
     const list = document.getElementById('filesList');
     list.innerHTML = '';
-
     files.forEach(f => {
       list.innerHTML += `
         <div class="file-card">
@@ -668,14 +746,11 @@
             <div class="file-name">${f.name}</div>
             <div class="file-size">${f.size} MB</div>
           </div>
-          <a class="download-btn" href="/api/download/${currentJobId}/${f.name}" download="${f.name}">
-            ↓ Descargar
-          </a>
+          <a class="download-btn" href="/api/download/${currentJobId}/${f.name}" download="${f.name}">↓ Descargar</a>
         </div>
       `;
     });
-
-    section.classList.add('visible');
+    document.getElementById('resultsSection').classList.add('visible');
   }
 
   function showError(msg) {
