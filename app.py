@@ -108,14 +108,14 @@ def run_youtube_job(job_id, url, clips):
         cmd = [
             "yt-dlp",
             "--no-check-certificates",
-            "--extractor-args", "youtube:player_client=android",
+            "--extractor-args", "youtube:player_client=ios",
             "--retries", "3",
             "-f", "best[ext=mp4]/best",
             "--newline",
             "-o", str(video_path),
         ]
-        if cookies_path.exists():
-            cmd += ["--cookies", str(cookies_path)]
+       # if cookies_path.exists():
+       #    cmd += ["--cookies", str(cookies_path)]
         cmd.append(url)
 
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
