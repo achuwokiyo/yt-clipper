@@ -259,4 +259,8 @@ def download_file(job_id, filename):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+from waitress import serve
+    serve(app, host="0.0.0.0", port=port, connection_limit=100, cleanup_interval=30, channel_timeout=600)
+flask==3.0.3
+yt-dlp==2024.11.18
+waitress==3.0.0
