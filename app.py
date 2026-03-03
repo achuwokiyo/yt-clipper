@@ -9,16 +9,18 @@ from pathlib import Path
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024 * 1024  # 2GB max upload
+app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024 * 1024  # 4GB max upload
 
 CLIPS_DIR = Path("/tmp/clips")
 CLIPS_DIR.mkdir(exist_ok=True)
 UPLOADS_DIR = Path("/tmp/uploads")
 UPLOADS_DIR.mkdir(exist_ok=True)
+CHUNKS_DIR = Path("/tmp/chunks")
+CHUNKS_DIR.mkdir(exist_ok=True)
 
 jobs = {}
-video_cache = {}   # YouTube URL cache
-upload_cache = {}  # Uploaded file cache
+video_cache = {}
+upload_cache = {}
 CACHE_MINUTES = 45
 
 def time_to_seconds(minutes, seconds):
@@ -87,73 +89,6 @@ def cut_clips(job_id, video_path, clips):
     jobs[job_id]["files"] = output_files
     jobs[job_id]["progress"] = f"✓ {len(output_files)} clips listos para descargar"
 
-def run_youtube_job(job_id, url, clips):
-    try:
-        clean_expired_cache()
-        cached = get_cached_video(url, video_cache)
-
-        if cached:
-            jobs[job_id]["status"] = "cutting"
-            jobs[job_id]["progress"] = "✓ Vídeo en caché — cortando directamente..."
-            jobs[job_id]["percent"] = 100
-            cut_clips(job_id, cached, clips)
-            return
-
-        jobs[job_id]["status"] = "downloading"
-        jobs[job_id]["progress"] = "Conectando con YouTube..."
-        jobs[job_id]["percent"] = 0
-        video_path = CLIPS_DIR / f"video_{uuid.uuid4().hex[:8]}.mp4"
-
-        cookies_path = Path("/app/cookies.txt")
-        cmd = [
-            "yt-dlp",
-            "--no-check-certificates",
-            "--extractor-args", "youtube:player_client=android",
-            "--retries", "3",
-            "-f", "best[ext=mp4]/best",
-            "--newline",
-            "-o", str(video_path),
-        ]
-        if cookies_path.exists():
-            cmd += ["--cookies", str(cookies_path)]
-        cmd.append(url)
-
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-        for line in process.stdout:
-            line = line.strip()
-            match = re.search(r'(\d+\.?\d*)%', line)
-            if match:
-                pct = float(match.group(1))
-                jobs[job_id]["percent"] = round(pct)
-                if pct < 50:
-                    jobs[job_id]["progress"] = f"Descargando vídeo... {round(pct)}%"
-                elif pct < 90:
-                    jobs[job_id]["progress"] = f"Casi listo... {round(pct)}%"
-                else:
-                    jobs[job_id]["progress"] = f"Finalizando... {round(pct)}%"
-            elif "Merging" in line:
-                jobs[job_id]["progress"] = "Mezclando audio y vídeo..."
-                jobs[job_id]["percent"] = 99
-
-        dl_stderr = process.stderr.read()
-        process.wait()
-
-        if process.returncode != 0 or not video_path.exists():
-            jobs[job_id]["status"] = "error"
-            jobs[job_id]["error"] = dl_stderr[-600:] if dl_stderr else "Error desconocido al descargar"
-            return
-
-        video_cache[url] = {"path": str(video_path), "downloaded_at": time.time()}
-        cut_clips(job_id, video_path, clips)
-
-    except subprocess.TimeoutExpired:
-        jobs[job_id]["status"] = "error"
-        jobs[job_id]["error"] = "Timeout: el vídeo tardó demasiado"
-    except Exception as e:
-        jobs[job_id]["status"] = "error"
-        jobs[job_id]["error"] = str(e)
-
 def run_upload_job(job_id, upload_id, clips):
     try:
         clean_expired_cache()
@@ -172,30 +107,79 @@ def run_upload_job(job_id, upload_id, clips):
 def index():
     return render_template("index.html")
 
-@app.route("/api/upload", methods=["POST"])
-def upload_video():
-    if "video" not in request.files:
-        return jsonify({"error": "No se recibió ningún archivo"}), 400
-    file = request.files["video"]
-    if file.filename == "":
-        return jsonify({"error": "Nombre de archivo vacío"}), 400
+# ── Chunked upload endpoints ──
 
+@app.route("/api/upload/start", methods=["POST"])
+def upload_start():
+    data = request.json
+    filename = secure_filename(data.get("filename", "video.mp4"))
+    total_chunks = int(data.get("total_chunks", 1))
     upload_id = uuid.uuid4().hex[:8]
-    filename = f"{upload_id}_{secure_filename(file.filename)}"
-    upload_path = UPLOADS_DIR / filename
-    file.save(str(upload_path))
+    chunk_dir = CHUNKS_DIR / upload_id
+    chunk_dir.mkdir(exist_ok=True)
+    # Store metadata
+    (chunk_dir / "meta.txt").write_text(f"{filename}\n{total_chunks}")
+    return jsonify({"upload_id": upload_id})
 
-    # Save to upload cache (45 min)
+@app.route("/api/upload/chunk", methods=["POST"])
+def upload_chunk():
+    upload_id = request.form.get("upload_id")
+    chunk_index = int(request.form.get("chunk_index", 0))
+    chunk_file = request.files.get("chunk")
+
+    if not upload_id or not chunk_file:
+        return jsonify({"error": "Faltan datos"}), 400
+
+    chunk_dir = CHUNKS_DIR / upload_id
+    if not chunk_dir.exists():
+        return jsonify({"error": "Upload ID no válido"}), 400
+
+    chunk_path = chunk_dir / f"chunk_{chunk_index:05d}"
+    chunk_file.save(str(chunk_path))
+    return jsonify({"ok": True, "chunk": chunk_index})
+
+@app.route("/api/upload/finish", methods=["POST"])
+def upload_finish():
+    data = request.json
+    upload_id = data.get("upload_id")
+    filename = data.get("filename", "video.mp4")
+
+    chunk_dir = CHUNKS_DIR / upload_id
+    if not chunk_dir.exists():
+        return jsonify({"error": "Upload ID no válido"}), 400
+
+    # Read metadata
+    meta = (chunk_dir / "meta.txt").read_text().split("\n")
+    total_chunks = int(meta[1]) if len(meta) > 1 else 1
+
+    # Assemble chunks
+    safe_name = secure_filename(filename)
+    final_path = UPLOADS_DIR / f"{upload_id}_{safe_name}"
+
+    with open(str(final_path), "wb") as outfile:
+        for i in range(total_chunks):
+            chunk_path = chunk_dir / f"chunk_{i:05d}"
+            if not chunk_path.exists():
+                return jsonify({"error": f"Falta el chunk {i}"}), 400
+            outfile.write(chunk_path.read_bytes())
+            chunk_path.unlink()  # Free space as we go
+
+    # Clean chunk dir
+    import shutil
+    shutil.rmtree(str(chunk_dir), ignore_errors=True)
+
+    size_mb = round(final_path.stat().st_size / (1024*1024), 1)
+
     upload_cache[upload_id] = {
-        "path": str(upload_path),
+        "path": str(final_path),
         "downloaded_at": time.time(),
-        "name": file.filename
+        "name": filename
     }
 
     return jsonify({
         "upload_id": upload_id,
-        "name": file.filename,
-        "size": round(upload_path.stat().st_size / (1024*1024), 1)
+        "name": filename,
+        "size": size_mb
     })
 
 @app.route("/api/recent")
@@ -215,32 +199,17 @@ def recent_uploads():
 @app.route("/api/start", methods=["POST"])
 def start_job():
     data = request.json
-    mode = data.get("mode", "upload")
     clips = data.get("clips", [])
-
     if not clips:
         return jsonify({"error": "Al menos un clip requerido"}), 400
 
+    upload_id = data.get("upload_id", "").strip()
+    if not upload_id:
+        return jsonify({"error": "Sube un vídeo primero"}), 400
+
     job_id = str(uuid.uuid4())[:8]
-    jobs[job_id] = {"status": "queued", "progress": "En cola...", "percent": 0, "files": [], "error": None}
-
-    if mode == "youtube":
-        url = data.get("url", "").strip()
-        if not url:
-            return jsonify({"error": "URL requerida"}), 400
-        thread = threading.Thread(target=run_youtube_job, args=(job_id, url, clips), daemon=True)
-
-    elif mode == "upload":
-        upload_id = data.get("upload_id", "").strip()
-        if not upload_id:
-            return jsonify({"error": "Sube un vídeo primero"}), 400
-        jobs[job_id]["status"] = "cutting"
-        jobs[job_id]["progress"] = "Preparando clips..."
-        thread = threading.Thread(target=run_upload_job, args=(job_id, upload_id, clips), daemon=True)
-
-    else:
-        return jsonify({"error": "Modo desconocido"}), 400
-
+    jobs[job_id] = {"status": "cutting", "progress": "Preparando clips...", "percent": 0, "files": [], "error": None}
+    thread = threading.Thread(target=run_upload_job, args=(job_id, upload_id, clips), daemon=True)
     thread.start()
     return jsonify({"job_id": job_id})
 
@@ -256,7 +225,7 @@ def download_file(job_id, filename):
     if not file_path.exists():
         return "Archivo no encontrado", 404
     return send_file(str(file_path), as_attachment=True, download_name=filename)
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    from waitress import serve
-    serve(app, host="0.0.0.0", port=port, connection_limit=100, cleanup_interval=30, channel_timeout=600)
+    app.run(host="0.0.0.0", port=port)
